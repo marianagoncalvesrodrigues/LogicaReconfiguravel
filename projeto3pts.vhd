@@ -3,213 +3,240 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_signed.all;
 use ieee.numeric_std.all;
 
-entity projeto is 																	--cria entidade{ 
-    port (entrada1           	        :  in std_logic_vector (3 DOWNTO 0) ;		--porta 'valor1 e valor2' vetor logico (4bits)
-        entrada2           	            :  in std_logic_vector (3 DOWNTO 0) ;
-        selecao 					    :	in std_logic := '0';
-        resultado 				        :	in std_logic := '0';
-        saidalog 				        : 	out std_logic_vector(3 DOWNTO 0);
-        dsp1, dsp2, dsp3, dsp4, dsp5	:	out std_logic_vector(7 DOWNTO 0));		--display dos resultados
+entity projeto is --cria entidade{ 
+    port (entrada1                           :in std_logic_vector(3 DOWNTO 0) ;--porta 'valor1 e valor2' vetor logico (4bits)
+        entrada2                           :in std_logic_vector(3 DOWNTO 0);
+        selecao                            :in std_logic;
+        resultado                         :in std_logic;
+        saidalog                            :out std_logic_vector(3 DOWNTO 0);
+        dsp1, dsp2, dsp3, dsp4, dsp5        :out std_logic_vector(7 DOWNTO 0));--display dos resultados
+end projeto;
 
-end projeto ;	
+architecture logic of projeto is	--implementações do projeto; descreve as relações entre as portas.{
 
-architecture logic of projeto is										--implementações do projeto; descreve as relações entre as portas.{
-    --signal saida: STD_LOGIC_VECTOR(7 DOWNTO 0);							--objeto da arquitetura; saida do tipo vetor logico de 7 a 0 (8bits)
-    signal saida: std_logic_vector(7 downto 0);
-    signal cont : integer:=0;
-    signal negativo : boolean;
-    signal led : boolean;
+    signal saida: std_logic_vector(4 downto 0);
+    signal saidafourbits: std_logic_vector(3 downto 0);
+    signal aux: std_logic;
+    signal cont : integer:= 0;
+    signal negativo : integer:= 0;
+    signal led : integer:= 0;
+    signal tmp: std_logic_vector(3 downto 0);
+    signal entrada15: std_logic_vector (4 downto 0);
+    signal entrada25: std_logic_vector (4 downto 0);
 
     begin
-        process(entrada, selecao)
+        process(entrada1, entrada2, selecao, resultado)
         begin
-            negativo <= false;
-            led <= false;
-            if(selecao = '1') then
+            negativo <= 0;
+            led <= 0;
+            if(rising_edge(selecao)) then
                 cont <= cont + 1;
             end if;
 
             case cont is
                 when 0 =>--op ad
-                    disp5 <= "10100001";
-                    disp4 <= "10001000";
-                    saida <= entrada1 + entrada2;
+                    led <= 0;
+                    dsp4 <= "10100001";
+                    dsp5 <= "10001000";
+                    entrada15 <= '0' & entrada1;
+                    entrada25 <= '0' & entrada2;
+                    saida <=  entrada15 + entrada25;
+                    
 
                 when 1 =>--op sub
-                    dsp5 <= "10000011";											--exibe operacao no display 1
-                    dsp4 <= "10010010";
-                    if(entrada1 < entrada2) then
-                        saida <= entrada2 - entrada1;
-                        negativo <= true;
+                    led <= 0;
+                    dsp4 <= "11000001";--exibe operacao no display 1 --p01234567 11000001
+                    dsp5 <= "10010010";--10100100
+                    entrada15 <= '0' & entrada1;
+                    entrada25 <= '0' & entrada2;
+
+                    if(entrada15 < entrada25) then
+                        saida <=  entrada25 - entrada15;
+                        negativo <= 1;
                     else
-                        saida <= entrada1 - entrada2;
+                        saida <=  entrada15 - entrada25;
                     end if;
 
                 when 2 =>--op and
-                    dsp5 <= "10001000";			--exibe operacao no display 1
-                    dsp4 <= "10001100";	
-                    saida <= entrada1 and entrada2;
-                    led <= true;
-                
+                    dsp5 <= "10001000";--exibe operacao no display 1   
+                    dsp4 <= "11001000";
+                    saidafourbits <= entrada1 and entrada2;
+                    led <= 1;
+
                 when 3 =>--op or
-                    dsp5 <= "11000000";			--exibe operacao no display 1
-                    dsp4 <= "11100000";
-                    saida <= entrada1 or entrada2;
-                    led <= true;
-                
+                    dsp5 <= "11000000";--exibe operacao no display 1
+                    dsp4 <= "11000001";
+                    saidafourbits <= entrada1 or entrada2;
+                    led <= 1;
+
                 when 4 =>--op xor
-                    dsp5 <= "11101000";			--exibe operacao no display 1
+                    dsp5 <= "10000101";--exibe operacao no display 1
                     dsp4 <= "11000000";
-                    saida <= entrada 1 xor entrada2;
-                    led <= true;
+                    saidafourbits <= entrada1 xor entrada2;
+                    led <= 1;
 
                 when 5 => --complemento
-                    dsp5 <= "11101000";			--arrumar disp					--exibe operacao no display 1
+                    --led <= 1;
+                    dsp5 <= "11101000";--exibe operacao no display 1
                     dsp4 <= "11000000";
-                    if entrada1 = "1000" then
-                        entrada1 <= "0111";
-                        saida <= entrada1 + 1;
-                    elsif entrada1 = "1001" then
-                        entrada1 <= "0110";
-                        saida <= entrada1 + 1;
+                    tmp <= std_logic_vector((not entrada1) + 1);
+                    --alias aux is tmp(0);
+                    aux <= tmp(0);
+                    if aux = '0' then
+                        saidafourbits <= entrada1;
+                    else
+                        tmp(0) <= '0';
+                        saidafourbits <= tmp;
+                    end if;
 
-        if(resultado = '1') then
-            if negativo then 
-                dsp3 <= "11110111";
+                when others =>
+                    cont <= 0;
+            end case;
+
+        if(resultado = '0') then
+            if negativo = 1 then 
+                dsp3 <= "10111111";
             end if;
             ---op logicas-----------------------------------------------------
-            if led then
-                if saida = "0000" then
+            if led = 1 then
+                if saidafourbits = "0000" then
                     saidalog <= "0000";
-                elsif saida = "0001" then	
+                elsif saidafourbits = "0001" then
                     saidalog <= "0001";
-                elsif saida = "0010" then				 
+                elsif saidafourbits = "0010" then
                     saidalog <= "0010";
-                elsif saida = "0011" then				 
+                elsif saidafourbits = "0011" then
                     saidalog <= "0011";
-                elsif saida = "0100" then				 
+                elsif saidafourbits = "0100" then
                     saidalog <= "0100";
                 ---05-------------------------------------------------------------------
-                elsif saida = "0101" then				 
+                elsif saidafourbits = "0101" then
                     saidalog <= "0101";
-                elsif saida = "0110" then				 
+                elsif saidafourbits = "0110" then
                     saidalog <= "0110";
-                elsif saida = "0111" then				 
+                elsif saidafourbits = "0111" then
                     saidalog <= "0111";
-                elsif saida = "1000" then				 
+                elsif saidafourbits = "1000" then
                     saidalog <= "1000";
-                elsif saida = "1001" then				 
+                elsif saidafourbits = "1001" then
                     saidalog <= "1001";
                 --10---------------------------------------------------------------------
-                elsif saida = "1010" then				 
+                elsif saidafourbits = "1010" then
                     saidalog <= "1010";
-                elsif saida = "1011" then				 
+                elsif saidafourbits = "1011" then
                     saidalog <= "1011";
-                elsif saida = "1100" then				 
+                elsif saidafourbits = "1100" then
                     saidalog <= "1100";
-                elsif saida = "1101" then				 
+                elsif saidafourbits = "1101" then
                     saidalog <= "1101";
-                elsif saida = "1110" then				 
+                elsif saidafourbits = "1110" then
                     saidalog <= "1110";
-                elsif saida = "1111" then
+                elsif saidafourbits = "1111" then
                     saidalog <= "1111";
-                end if
+                end if;
             ---op aritmeticas-----------------------------------------------------
-            elsif saida = "00000000" then
-                dsp1 <= "11000000";
-                dsp2 <= "11000000";
-            elsif saida = "00000001" then	
-                dsp1 <= "11000000";
-                dsp2 <= "11111001";
-            elsif saida = "00000010" then				 
-                dsp1 <= "11000000";
-                dsp2 <= "10100100";
-            elsif saida = "00000011" then				 
-                dsp1 <= "11000000";
-                dsp2 <= "10110000";
-            elsif saida = "00000100" then				 
-                dsp1 <= "11000000";
-                dsp2 <= "10011001";
-            ---05-------------------------------------------------------------------
-            elsif saida = "00000101" then				 
-                dsp1 <= "11000000";
-                dsp2 <= "10010010";
-            elsif saida = "00000110" then				 
-                dsp1 <= "11000000";
-                dsp2 <= "10000010";
-            elsif saida = "00000111" then				 
-                dsp1 <= "11000000";
-                dsp2 <= "11111000";
-            elsif saida = "00001000" then				 
-                dsp1 <= "11000000";
-                dsp2 <= "10000000";
-            elsif saida = "00001001" then				 
-                dsp1 <= "11000000";
-                dsp2 <= "10011000";
-            --10---------------------------------------------------------------------
-            elsif saida = "00001010" then				 
-                dsp1 <= "11111001";
-                dsp2 <= "11000000";
-            elsif saida = "00001011" then				 
-                dsp1 <= "11111001";
-                dsp2 <= "11111001";
-            elsif saida = "00001100" then				 
-                dsp1 <= "11111001";
-                dsp2 <= "10100100";
-            elsif saida = "00001101" then				 
-                dsp1 <= "11111001";
-                dsp2 <= "10110000";
-            elsif saida = "00001110" then				 
-                dsp1 <= "11111001";
-                dsp2 <= "10011001";
-            --15-----------------------------------------------------
-            elsif saida = "00001111" then				 
-                dsp1 <= "11111001";
-                dsp2 <= "10010010";
-            elsif saida = "00010000" then				 
-                dsp1 <= "11111001";
-                dsp2 <= "10000010";
-            elsif saida = "00010001" then				 
-                dsp1 <= "11111001";
-                dsp2 <= "11111000";
-            elsif saida = "00010010" then				 
-                dsp1 <= "11111001";
-                dsp2 <= "10000000";
-            elsif saida = "00010011" then				 
-                dsp1 <= "11111001";
-                dsp2 <= "10011000";
-            ---20----------------------------------------------------
-            elsif saida = "00010100" then				 
-                dsp1 <= "10100100";
-                dsp2 <= "11000000";
-            elsif saida = "00010101" then				 
-                dsp1 <= "10100100";
-                dsp2 <= "11111001";
-            elsif saida = "00010110" then				 
-                dsp1 <= "10100100";
-                dsp2 <= "10100100";
-            elsif saida = "00010111" then                
-                dsp1 <= "10100100";
-                dsp2 <= "10110000";
-            elsif saida = "00011000" then
-                dsp1 <= "10100100";
-                dsp2 <= "10011001";
-            ---25-----------------------------------------------------
-            elsif saida = "00011001" then               
-                dsp1 <= "10100100";
-                dsp2 <= "10010010";
-            elsif saida = "00011010" then                
-                dsp1 <= "10100100";
-                dsp2 <= "10000010";
-            elsif saida = "00011011" then               
-                dsp1 <= "10100100";
-                dsp2 <= "11111000";
-            elsif saida = "00011100" then                
-                dsp1 <= "10100100";
-                dsp2 <= "10000000";
-            elsif saida = "00011101" then               
-                dsp1 <= "10100100";
-                dsp2 <= "10011000";
-            ---30-----------------------------------------------------    
-            
-        end if
+            else
+                if saida = "00000000" then
+                    dsp2 <= "11000000";
+                    dsp1 <= "11000000";
+                elsif saida = "00000001" then
+                    dsp2 <= "11000000";
+                    dsp1 <= "11111001";
+                elsif saida = "00000010" then
+                    dsp2 <= "11000000";
+                    dsp1 <= "10100100";
+                elsif saida = "00000011" then
+                    dsp2 <= "11000000";
+                    dsp1 <= "10110000";
+                elsif saida = "00000100" then
+                    dsp2 <= "11000000";
+                    dsp1 <= "10011001";
+                ---05-------------------------------------------------------------------
+                elsif saida = "00000101" then
+                    dsp2 <= "11000000";
+                    dsp1 <= "10010010";
+                elsif saida = "00000110" then
+                    dsp2 <= "11000000";
+                    dsp1 <= "10000010";
+                elsif saida = "00000111" then
+                    dsp2 <= "11000000";
+                    dsp1 <= "11111000";
+                elsif saida = "00001000" then
+                    dsp2 <= "11000000";
+                    dsp1 <= "10000000";
+                elsif saida = "00001001" then
+                    dsp2 <= "11000000";
+                    dsp1 <= "10011000";
+                --10---------------------------------------------------------------------
+                elsif saida = "00001010" then
+                    dsp2 <= "11111001";
+                    dsp1 <= "11000000";
+                elsif saida = "00001011" then
+                    dsp2 <= "11111001";
+                    dsp1 <= "11111001";
+                elsif saida = "00001100" then
+                    dsp2 <= "11111001";
+                    dsp1 <= "10100100";
+                elsif saida = "00001101" then
+                    dsp2 <= "11111001";
+                    dsp1 <= "10110000";
+                elsif saida = "00001110" then
+                    dsp2 <= "11111001";
+                    dsp1 <= "10011001";
+                --15-----------------------------------------------------
+                elsif saida = "01111" then
+                    dsp2 <= "11111001";
+                    dsp1 <= "10010010";
+                elsif saida = "10000" then
+                    dsp2 <= "11111001";
+                    dsp1 <= "10000010";
+                elsif saida = "10001" then
+                    dsp2 <= "11111001";
+                    dsp1 <= "11111000";
+                elsif saida = "10010" then
+                    dsp2 <= "11111001";
+                    dsp1 <= "10000000";
+                elsif saida = "10011" then
+                    dsp2 <= "11111001";
+                    dsp1 <= "10011000";
+                ---20----------------------------------------------------
+                elsif saida = "10100" then
+                    dsp2 <= "10100100";
+                    dsp1 <= "11000000";
+                elsif saida = "10101" then
+                    dsp2 <= "10100100";
+                    dsp1 <= "11111001";
+                elsif saida = "10110" then
+                    dsp2 <= "10100100";
+                    dsp1 <= "10100100";
+                elsif saida = "10111" then
+                    dsp2 <= "10100100";
+                    dsp1 <= "10110000";
+                elsif saida = "11000" then
+                    dsp2 <= "10100100";
+                    dsp1 <= "10011001";
+                ---25-----------------------------------------------------
+                elsif saida = "11001" then
+                    dsp2 <= "10100100";
+                    dsp1 <= "10010010";
+                elsif saida = "11010" then
+                    dsp2 <= "10100100";
+                    dsp1 <= "10000010";
+                elsif saida = "11011" then
+                    dsp2 <= "10100100";
+                    dsp1 <= "11111000";
+                elsif saida = "11100" then
+                    dsp2 <= "10100100";
+                    dsp1 <= "10000000";
+                elsif saida = "11101" then
+                    dsp2 <= "10100100";
+                    dsp1 <= "10011000";
+                elsif saida = "11110" then               
+                    dsp2 <= "10110000";
+                    dsp1 <= "11000000";
+                ---30-----------------------------------------------------    
+                end if;
+            end if;
+        end if;
+  end process;
+end logic;

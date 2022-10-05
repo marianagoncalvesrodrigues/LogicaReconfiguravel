@@ -25,17 +25,20 @@ architecture logic of projeto is	--implementações do projeto; descreve as rela
     signal entrada25: std_logic_vector (4 downto 0);
 
     begin
-        process(entrada1, entrada2, selecao, resultado)
+        process(entrada1, entrada2, selecao)
         begin
             led <= 0;
             if(rising_edge(selecao)) then
                 cont <= cont + 1;
             end if;
-
+				if(entrada15 < entrada25) then 
+                        negativo <= 1;
+                    else
+								negativo <= 0;
+            end if;
             case cont is
                 when 0 =>--op ad
                     led <= 0;
-						  dsp3 <= "11111111";
                     dsp4 <= "10100001";
                     dsp5 <= "10001000";
                     entrada15 <= '0' & entrada1;
@@ -45,7 +48,7 @@ architecture logic of projeto is	--implementações do projeto; descreve as rela
 
                 when 1 =>--op sub
                     led <= 0;
-						  dsp3 <= "11111111";
+						  
                     dsp4 <= "11000001";--exibe operacao no display 1 --p01234567 11000001
                     dsp5 <= "10010010";--10100100
                     entrada15 <= '0' & entrada1;
@@ -53,35 +56,29 @@ architecture logic of projeto is	--implementações do projeto; descreve as rela
 
                     if(entrada15 < entrada25) then
                         saida <=  entrada25 - entrada15;
-                        negativo <= 1;
                     else
-								dsp3 <= "11111111";
                         saida <=  entrada15 - entrada25;
                     end if;
 
                 when 2 =>--op and
-						  dsp3 <= "11111111";
                     dsp5 <= "10001000";--exibe operacao no display 1   
                     dsp4 <= "11001000";
                     saidafourbits <= entrada1 and entrada2;
                     led <= 1;
 
                 when 3 =>--op or
-						  dsp3 <= "11111111";
                     dsp5 <= "11000000";--exibe operacao no display 1
                     dsp4 <= "11000001";
                     saidafourbits <= entrada1 or entrada2;
                     led <= 1;
 
                 when 4 =>--op xor 
-						  dsp3 <= "11111111";
                     dsp5 <= "10001001";--exibe operacao no display 1
                     dsp4 <= "11000000";
                     saidafourbits <= entrada1 xor entrada2;
                     led <= 1;
 
                 when 5 => --complemento
-						  dsp3 <= "11111111";
                     dsp5 <= "11000110";--exibe operacao no display 1
                     dsp4 <= "11000000";
                     tmp <= std_logic_vector((not entrada1));
@@ -89,13 +86,22 @@ architecture logic of projeto is	--implementações do projeto; descreve as rela
 						  led <= 1;
                 when others =>
                     cont <= 0;
-						  dsp3 <= "11111111";
             end case;
 
-        if(resultado = '0') then
-            if negativo = 1 then 
-                dsp3 <= "10111111";
-            end if;
+        
+  end process;
+  process(resultado)
+  begin
+   if(rising_edge(resultado)) then
+	 
+			   case negativo is
+						when 1 =>
+							dsp3 <= "10111111";
+						when 0 =>
+							dsp3 <= "11111111";
+						when others =>
+							dsp3 <= "11111111";
+				end case;
             ---op logicas-----------------------------------------------------
             if led = 1 then
                 if saidafourbits = "0000" then
@@ -238,15 +244,5 @@ architecture logic of projeto is	--implementações do projeto; descreve as rela
                 end if;
             end if;
 		end if;
-  end process;
-  
- 
-				--case negativo is
-				--		when 1 =>
-				--			dsp3 <= "10111111";
-				--		when 0 =>
-				--			dsp3 <= "11111111";
-				--		when others =>
-				--			dsp3 <= "11111111";
-				
+ end process;	
 end logic;

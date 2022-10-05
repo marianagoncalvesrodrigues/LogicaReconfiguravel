@@ -31,11 +31,11 @@ architecture logic of projeto is	--implementações do projeto; descreve as rela
             if(rising_edge(selecao)) then
                 cont <= cont + 1;
             end if;
-				if(entrada15 < entrada25) then 
+				if(entrada15 < entrada25 and cont = 1) then 
                         negativo <= 1;
                     else
 								negativo <= 0;
-            end if;
+				end if;
             case cont is
                 when 0 =>--op ad
                     led <= 0;
